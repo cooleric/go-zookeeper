@@ -301,13 +301,16 @@ func WithMaxBufferSize(maxBufferSize int) connOption {
 // to a limit of 1mb. This option should be used for non-standard server setup
 // where znode is bigger than default 1mb.
 func WithMaxConnBufferSize(maxBufferSize int) connOption {
-       return func(c *Conn) {
-               c.buf = make([]byte, maxBufferSize)
-       }
+	return func(c *Conn) {
+		c.buf = make([]byte, maxBufferSize)
+	}
 }
 
 func (c *Conn) Close() {
-	close(c.shouldQuit)
+	_, closed := <-c.shouldQuit
+	if !closed {
+		close(c.shouldQuit)
+	}
 
 	select {
 	case <-c.queueRequest(opClose, &closeRequest{}, &closeResponse{}, nil):
